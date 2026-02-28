@@ -6,6 +6,7 @@
     <script type="importmap">
     { "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
         "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
     }}
     </script>
@@ -26,40 +27,38 @@
     <div class="input-box">
         <input type="text" id="userQuestion" placeholder="Puchiye Beta, Maths mein kya dikkat hai?">
         <button id="askBtn">Puchiye Sir Se</button>
-        <p id="status">Loading Rama Sir...</p>
+        <p id="status">Loading Systems...</p>
     </div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         import { TalkingHead } from "talkinghead";
 
-        // --- 1. SETTINGS: ENTER YOUR DATA HERE ---
+        // --- ENTER YOUR KEYS ---
         const GEMINI_KEY = "AIzaSyAzefwb8O2GFL9I-UDsf82boO5yuFnqQhA";
         const FISH_KEY = "30a6d7b638504103835043f11bb4fe74";
-        const VOICE_ID = "bcbeee86465343ffb0293be0c143af8f";
-        const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; // Must end in .jpg or .png
+        const VOICE_ID = " bcbeee86465343ffb0293be0c143af8f";
+        const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; 
 
-        // Initialize Gemini
         const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+        // FIXED MODEL NAME
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-3-flash-preview",
-            systemInstruction: "You are Rama Sir, an Indian Air Force veteran and Maths teacher. Answer in Hinglish. Start with 'Jai Hind'. Be disciplined. Keep answers short."
+            model: "gemini-3-flash-preview", 
+            systemInstruction: "You are Rama Sir, an Indian Air Force veteran and Maths teacher. Answer in Hinglish. Start with 'Jai Hind'." 
         });
         const chat = model.startChat({ history: [] });
 
-        // Initialize Avatar
         const nodeAvatar = document.getElementById('avatar-container');
         const head = new TalkingHead(nodeAvatar);
         
         async function init() {
             try {
                 await head.init();
-                // Load your photo as a 3D avatar base
                 await head.loadAvatar(PHOTO_URL); 
                 document.getElementById('status').innerText = "Rama Sir is Online!";
             } catch (e) {
-                console.error(e);
-                document.getElementById('status').innerText = "Face Load Error. Refresh or check photo link.";
+                console.error("FACE LOAD ERROR:", e);
+                document.getElementById('status').innerText = "Face Error. Check Console.";
             }
         }
         init();
@@ -72,38 +71,25 @@
             status.innerText = "Rama Sir soch rahe hain...";
 
             try {
-                // 1. BRAIN: Get Text from Gemini 3
                 const result = await chat.sendMessage(question);
                 const response = await result.response;
                 const answerText = response.text();
 
-                // 2. VOICE: Get Audio from Fish Audio
                 status.innerText = "Rama Sir bol rahe hain...";
                 const fRes = await fetch("https://api.fish.audio/v1/tts", {
                     method: "POST",
-                    headers: { 
-                        "Authorization": `Bearer ${FISH_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        text: answerText,
-                        reference_id: VOICE_ID,
-                        format: "mp3"
-                    })
+                    headers: { "Authorization": `Bearer ${FISH_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: answerText, reference_id: VOICE_ID, format: "mp3" })
                 });
 
-                if (!fRes.ok) throw new Error("Voice API Error");
                 const audioBlob = await fRes.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
 
-                // 3. ANIMATION: Speak with Lip-Sync
-                // TalkingHead.js syncs your photo movements to the audio automatically
                 await head.speakAudio(audioUrl);
                 status.innerText = "Sawal puchiye...";
-
             } catch (err) {
-                console.error(err);
-                status.innerText = "Connection Issue. Check API keys.";
+                console.error("SYSTEM ERROR:", err);
+                status.innerText = "Connectivity Issue. Check Keys.";
             }
         };
     </script>
