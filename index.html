@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Rama Sir AI Academy</title>
+    <title>Rama Sir AI Maths Academy</title>
     <script type="importmap">
     { "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
@@ -15,7 +15,8 @@
         #avatar-container { width: 450px; height: 450px; margin: 20px auto; border-radius: 20px; background: #000; border: 4px solid #3b82f6; overflow: hidden; position: relative; }
         .input-box { background: #1e293b; padding: 25px; border-radius: 15px; display: inline-block; width: 90%; max-width: 600px; }
         input { width: 75%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 15px; outline: none; color: #000; }
-        button { padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button { padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        button:disabled { background: #475569; cursor: not-allowed; }
         #status { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; }
     </style>
 </head>
@@ -26,53 +27,52 @@
 
     <div class="input-box">
         <input type="text" id="userQuestion" placeholder="Puchiye Beta, Maths mein kya dikkat hai?">
-        <button id="askBtn">Puchiye Sir Se</button>
-        <p id="status">System Initializing...</p>
+        <button id="askBtn" disabled>Starting Rama Sir...</button>
+        <p id="status">Initializing 3D Systems...</p>
     </div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         import { TalkingHead } from "talkinghead";
 
-        // --- PASTE YOUR NEW SECURE DATA HERE ---
-        const GEMINI_KEY = "AIzaSyCkT7j30L5LiPrwRyM4vMVmqGKdUXjHEps"; 
+        // --- PASTE YOUR DATA HERE ---
+        const GEMINI_KEY = "AIzaSyAa15VVjt9BNopsa4BvvuKmd5PMENBnKow"; 
         const FISH_KEY = "30a6d7b638504103835043f11bb4fe74";
         const VOICE_ID = "bcbeee86465343ffb0293be0c143af8f";
         const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; 
 
         const genAI = new GoogleGenerativeAI(GEMINI_KEY);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.0-flash", // Use 2.0 Flash for best 2026 performance
+            model: "gemini-2.0-flash", // Using the 2026 stable version
             systemInstruction: "You are Rama Sir, Indian Air Force veteran and maths teacher. Use Hinglish. Start with Jai Hind." 
         });
 
         let head;
+        const btn = document.getElementById('askBtn');
+        const status = document.getElementById('status');
 
-        // Optimized Init Sequence
         async function init() {
             try {
                 const node = document.getElementById('avatar-container');
-                // Create instance first
                 head = new TalkingHead(node);
-                // Wait for the library to be fully ready
-                setTimeout(async () => {
-                    await head.init();
-                    await head.loadAvatar(PHOTO_URL); 
-                    document.getElementById('status').innerText = "Rama Sir is Online!";
-                }, 1000);
+                // Wait for the library to be fully ready before init
+                await head.init();
+                await head.loadAvatar(PHOTO_URL); 
+                status.innerText = "Rama Sir is Online!";
+                btn.innerText = "Puchiye Sir Se";
+                btn.disabled = false;
             } catch (e) {
                 console.error("FACE LOAD ERROR:", e);
-                document.getElementById('status').innerText = "Face Load Error. Check Console.";
+                status.innerText = "Error: Face load failed. Check your photo link.";
             }
         }
-        
         init();
 
-        document.getElementById('askBtn').onclick = async () => {
+        btn.onclick = async () => {
             const question = document.getElementById('userQuestion').value;
-            const status = document.getElementById('status');
             if(!question || !head) return;
 
+            btn.disabled = true;
             status.innerText = "Rama Sir soch rahe hain...";
 
             try {
@@ -87,6 +87,7 @@
                     body: JSON.stringify({ text: answerText, reference_id: VOICE_ID, format: "mp3" })
                 });
 
+                if (!fRes.ok) throw new Error("Voice API Error");
                 const audioBlob = await fRes.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -94,7 +95,9 @@
                 status.innerText = "Sawal puchiye...";
             } catch (err) {
                 console.error("SYSTEM ERROR:", err);
-                status.innerText = "Key is blocked or leaked. Use a NEW key.";
+                status.innerText = "Error: Check your API key or connection.";
+            } finally {
+                btn.disabled = false;
             }
         };
     </script>
