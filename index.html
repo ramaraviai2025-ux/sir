@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rama Sir AI Academy</title>
+    <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
+        "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+    }}
+    </script>
+    <style>
+        body { background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+        #avatar-container { width: 450px; height: 450px; margin: 20px auto; border-radius: 20px; background: #000; border: 4px solid #3b82f6; overflow: hidden; position: relative; }
+        .input-box { background: #1e293b; padding: 25px; border-radius: 15px; display: inline-block; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { width: 75%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 15px; outline: none; color: #000; }
+        button { padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        #status { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🇮🇳 Rama Sir AI Maths Academy</h1>
+    <div id="avatar-container"></div>
+
+    <div class="input-box">
+        <input type="text" id="userQuestion" placeholder="Puchiye Beta, Maths mein kya dikkat hai?">
+        <button id="askBtn">Puchiye Sir Se</button>
+        <p id="status">Loading Rama Sir...</p>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+        import { TalkingHead } from "talkinghead";
+
+        // --- 1. SETTINGS: ENTER YOUR DATA HERE ---
+        const GEMINI_KEY = "AIzaSyAzefwb8O2GFL9I-UDsf82boO5yuFnqQhA";
+        const FISH_KEY = "30a6d7b638504103835043f11bb4fe74";
+        const VOICE_ID = "bcbeee86465343ffb0293be0c143af8f";
+        const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; // Must end in .jpg or .png
+
+        // Initialize Gemini
+        const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-3-flash-preview",
+            systemInstruction: "You are Rama Sir, an Indian Air Force veteran and Maths teacher. Answer in Hinglish. Start with 'Jai Hind'. Be disciplined. Keep answers short."
+        });
+        const chat = model.startChat({ history: [] });
+
+        // Initialize Avatar
+        const nodeAvatar = document.getElementById('avatar-container');
+        const head = new TalkingHead(nodeAvatar);
+        
+        async function init() {
+            try {
+                await head.init();
+                // Load your photo as a 3D avatar base
+                await head.loadAvatar(PHOTO_URL); 
+                document.getElementById('status').innerText = "Rama Sir is Online!";
+            } catch (e) {
+                console.error(e);
+                document.getElementById('status').innerText = "Face Load Error. Refresh or check photo link.";
+            }
+        }
+        init();
+
+        document.getElementById('askBtn').onclick = async () => {
+            const question = document.getElementById('userQuestion').value;
+            const status = document.getElementById('status');
+            if(!question) return;
+
+            status.innerText = "Rama Sir soch rahe hain...";
+
+            try {
+                // 1. BRAIN: Get Text from Gemini 3
+                const result = await chat.sendMessage(question);
+                const response = await result.response;
+                const answerText = response.text();
+
+                // 2. VOICE: Get Audio from Fish Audio
+                status.innerText = "Rama Sir bol rahe hain...";
+                const fRes = await fetch("https://api.fish.audio/v1/tts", {
+                    method: "POST",
+                    headers: { 
+                        "Authorization": `Bearer ${FISH_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        text: answerText,
+                        reference_id: VOICE_ID,
+                        format: "mp3"
+                    })
+                });
+
+                if (!fRes.ok) throw new Error("Voice API Error");
+                const audioBlob = await fRes.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // 3. ANIMATION: Speak with Lip-Sync
+                // TalkingHead.js syncs your photo movements to the audio automatically
+                await head.speakAudio(audioUrl);
+                status.innerText = "Sawal puchiye...";
+
+            } catch (err) {
+                console.error(err);
+                status.innerText = "Connection Issue. Check API keys.";
+            }
+        };
+    </script>
+</body>
+</html>
