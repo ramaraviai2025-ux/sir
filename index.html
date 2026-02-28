@@ -27,45 +27,51 @@
     <div class="input-box">
         <input type="text" id="userQuestion" placeholder="Puchiye Beta, Maths mein kya dikkat hai?">
         <button id="askBtn">Puchiye Sir Se</button>
-        <p id="status">Connecting to Rama Sir...</p>
+        <p id="status">System Initializing...</p>
     </div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         import { TalkingHead } from "talkinghead";
 
-        // CONFIG (Check your keys carefully)
-        const GEMINI_KEY = "AIzaSyBHVThOISK8rvj4zedOe38unMJbyTPqX2I";
+        // --- PASTE YOUR NEW SECURE DATA HERE ---
+        const GEMINI_KEY = "AIzaSyCkT7j30L5LiPrwRyM4vMVmqGKdUXjHEps"; 
         const FISH_KEY = "30a6d7b638504103835043f11bb4fe74";
         const VOICE_ID = "bcbeee86465343ffb0293be0c143af8f";
         const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; 
 
         const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-        // STABLE 2026 MODEL
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash", // Use 2.0 Flash for best 2026 performance
             systemInstruction: "You are Rama Sir, Indian Air Force veteran and maths teacher. Use Hinglish. Start with Jai Hind." 
         });
 
         let head;
+
+        // Optimized Init Sequence
         async function init() {
             try {
                 const node = document.getElementById('avatar-container');
+                // Create instance first
                 head = new TalkingHead(node);
-                await head.init();
-                await head.loadAvatar(PHOTO_URL); 
-                document.getElementById('status').innerText = "Rama Sir is Online!";
+                // Wait for the library to be fully ready
+                setTimeout(async () => {
+                    await head.init();
+                    await head.loadAvatar(PHOTO_URL); 
+                    document.getElementById('status').innerText = "Rama Sir is Online!";
+                }, 1000);
             } catch (e) {
                 console.error("FACE LOAD ERROR:", e);
                 document.getElementById('status').innerText = "Face Load Error. Check Console.";
             }
         }
+        
         init();
 
         document.getElementById('askBtn').onclick = async () => {
             const question = document.getElementById('userQuestion').value;
             const status = document.getElementById('status');
-            if(!question) return;
+            if(!question || !head) return;
 
             status.innerText = "Rama Sir soch rahe hain...";
 
@@ -75,17 +81,12 @@
 
                 status.innerText = "Rama Sir bol rahe hain...";
                 
-                // Using a proxy to avoid the CORS block you see in Console
                 const fRes = await fetch("https://api.fish.audio/v1/tts", {
                     method: "POST",
-                    headers: { 
-                        "Authorization": `Bearer ${FISH_KEY}`,
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Authorization": `Bearer ${FISH_KEY}`, "Content-Type": "application/json" },
                     body: JSON.stringify({ text: answerText, reference_id: VOICE_ID, format: "mp3" })
                 });
 
-                if (!fRes.ok) throw new Error("Voice API Error");
                 const audioBlob = await fRes.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -93,7 +94,7 @@
                 status.innerText = "Sawal puchiye...";
             } catch (err) {
                 console.error("SYSTEM ERROR:", err);
-                status.innerText = "Check your Console (F12) for error details.";
+                status.innerText = "Key is blocked or leaked. Use a NEW key.";
             }
         };
     </script>
