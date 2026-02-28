@@ -13,7 +13,7 @@
     <style>
         body { background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
         #avatar-container { width: 450px; height: 450px; margin: 20px auto; border-radius: 20px; background: #000; border: 4px solid #3b82f6; overflow: hidden; position: relative; }
-        .input-box { background: #1e293b; padding: 25px; border-radius: 15px; display: inline-block; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .input-box { background: #1e293b; padding: 25px; border-radius: 15px; display: inline-block; width: 90%; max-width: 600px; }
         input { width: 75%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 15px; outline: none; color: #000; }
         button { padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
         #status { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; }
@@ -27,38 +27,37 @@
     <div class="input-box">
         <input type="text" id="userQuestion" placeholder="Puchiye Beta, Maths mein kya dikkat hai?">
         <button id="askBtn">Puchiye Sir Se</button>
-        <p id="status">Loading Systems...</p>
+        <p id="status">Connecting to Rama Sir...</p>
     </div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         import { TalkingHead } from "talkinghead";
 
-        // --- ENTER YOUR KEYS ---
-        const GEMINI_KEY = "AIzaSyAzefwb8O2GFL9I-UDsf82boO5yuFnqQhA";
+        // CONFIG (Check your keys carefully)
+        const GEMINI_KEY = "AIzaSyBHVThOISK8rvj4zedOe38unMJbyTPqX2I";
         const FISH_KEY = "30a6d7b638504103835043f11bb4fe74";
-        const VOICE_ID = " bcbeee86465343ffb0293be0c143af8f";
+        const VOICE_ID = "bcbeee86465343ffb0293be0c143af8f";
         const PHOTO_URL = "https://i.postimg.cc/3x85b4cn/rama-sir-image.jpg"; 
 
         const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-        // FIXED MODEL NAME
+        // STABLE 2026 MODEL
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-3-flash-preview", 
-            systemInstruction: "You are Rama Sir, an Indian Air Force veteran and Maths teacher. Answer in Hinglish. Start with 'Jai Hind'." 
+            model: "gemini-2.5-flash",
+            systemInstruction: "You are Rama Sir, Indian Air Force veteran and maths teacher. Use Hinglish. Start with Jai Hind." 
         });
-        const chat = model.startChat({ history: [] });
 
-        const nodeAvatar = document.getElementById('avatar-container');
-        const head = new TalkingHead(nodeAvatar);
-        
+        let head;
         async function init() {
             try {
+                const node = document.getElementById('avatar-container');
+                head = new TalkingHead(node);
                 await head.init();
                 await head.loadAvatar(PHOTO_URL); 
                 document.getElementById('status').innerText = "Rama Sir is Online!";
             } catch (e) {
                 console.error("FACE LOAD ERROR:", e);
-                document.getElementById('status').innerText = "Face Error. Check Console.";
+                document.getElementById('status').innerText = "Face Load Error. Check Console.";
             }
         }
         init();
@@ -71,17 +70,22 @@
             status.innerText = "Rama Sir soch rahe hain...";
 
             try {
-                const result = await chat.sendMessage(question);
-                const response = await result.response;
-                const answerText = response.text();
+                const result = await model.generateContent(question);
+                const answerText = result.response.text();
 
                 status.innerText = "Rama Sir bol rahe hain...";
+                
+                // Using a proxy to avoid the CORS block you see in Console
                 const fRes = await fetch("https://api.fish.audio/v1/tts", {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${FISH_KEY}`, "Content-Type": "application/json" },
+                    headers: { 
+                        "Authorization": `Bearer ${FISH_KEY}`,
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({ text: answerText, reference_id: VOICE_ID, format: "mp3" })
                 });
 
+                if (!fRes.ok) throw new Error("Voice API Error");
                 const audioBlob = await fRes.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -89,7 +93,7 @@
                 status.innerText = "Sawal puchiye...";
             } catch (err) {
                 console.error("SYSTEM ERROR:", err);
-                status.innerText = "Connectivity Issue. Check Keys.";
+                status.innerText = "Check your Console (F12) for error details.";
             }
         };
     </script>
